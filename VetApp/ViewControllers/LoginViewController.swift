@@ -81,7 +81,7 @@ class LoginViewController: UIViewController {
     // MARK: - Actions
     @objc private func handleLogin() {
         // Backend gelince burası gerçek veriden alınacak
-        let fakeRole = "OWNER" // ya da "VET"
+        let fakeRole = "OWNE" // ya da "VET"
 
         if fakeRole == "OWNER" {
             let vc = OwnerTabBarController()
