@@ -1,0 +1,13 @@
+[
+    {
+        "id": 1,
+        "vetId": 2,
+        "title": "Surgery"
+    },
+    {
+        "id": 2,
+        "vetId": 2,
+        "title": "Dentistry"
+    }
+]
+

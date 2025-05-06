@@ -7,7 +7,8 @@
 import UIKit
 
 class VetAppointmentsViewController: UIViewController {
-    private var appointments: [VetAppointment] = [] // Dummy data
+
+    private var appointments = DummyDataLoader.load("appointments", as: [VetAppointment].self)
 
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -21,7 +22,6 @@ class VetAppointmentsViewController: UIViewController {
         title = "Appointments"
         view.backgroundColor = .systemBackground
         setupTableView()
-        loadDummyAppointments()
     }
 
     private func setupTableView() {
@@ -36,13 +36,6 @@ class VetAppointmentsViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
     }
-
-    private func loadDummyAppointments() {
-        appointments = [
-            VetAppointment(id: 1, petName: "Karabaş", ownerName: "Ali", date: "2025-05-06", status: "PENDING"),
-            VetAppointment(id: 2, petName: "Boncuk", ownerName: "Zeynep", date: "2025-05-07", status: "PENDING")
-        ]
-    }
 }
 
 extension VetAppointmentsViewController: UITableViewDelegate, UITableViewDataSource {
@@ -53,7 +46,7 @@ extension VetAppointmentsViewController: UITableViewDelegate, UITableViewDataSou
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let app = appointments[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = "\(app.petName) - \(app.date) (\(app.status))"
+        cell.textLabel?.text = "\(app.petName) - \(app.appointmentTime) (\(app.status))"
         return cell
     }
 

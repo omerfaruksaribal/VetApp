@@ -49,15 +49,30 @@ class OwnerAppointmentsViewController: UIViewController {
         ])
     }
 
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "Tamam", style: .default))
+        present(alert, animated: true)
+    }
+
+
     @objc private func handleCreateAppointment() {
-        let pet = petField.text ?? ""
-        let vet = vetField.text ?? ""
+        let petName = petField.text ?? ""
+        let vetName = vetField.text ?? ""
         let date = dateField.text ?? ""
         let time = timeField.text ?? ""
+        let datetime = "\(date)T\(time)"
 
-        print("📅 Appointment has created:")
-        print("Pet: \(pet), Vet: \(vet), Date: \(date), Time: \(time)")
-
-        // API çağrısı backend aktif olunca buraya gelecek
+        let appointment = AppointmentResponse(
+            id: UUID().hashValue,
+            petID: 1, // Resolve from pet name in real case
+            vetID: 2, // Resolve from vet name
+            vetName: vetName,
+            petName: petName,
+            status: "PENDING",
+            appointmentTime: datetime
+        )
+        LocalDataWriter.append("appointments", item: appointment)
+        showAlert(title: "Success", message: "Appointment created!")
     }
 }

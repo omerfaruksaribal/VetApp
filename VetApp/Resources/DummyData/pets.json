@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "ownerId": 1,
+        "name": "Pamuk",
+        "species": "Cat",
+        "breed": "Van",
+        "gender": "Female",
+        "birthDate": "2022-01-15"
+    },
+    {
+        "id": 2,
+        "ownerId": 1,
+        "name": "Karabas",
+        "species": "Dog",
+        "breed": "Kangal",
+        "gender": "Male",
+        "birthDate": "2020-06-20"
+    }
+]
+
+

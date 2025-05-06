@@ -5,7 +5,6 @@
 //  Created by Ömerfaruk Saribal on 5.05.2025.
 //
 
-// PROBLEMLER VAR DÜZELT
 struct UserResponse: Codable {
     let id: Int
     let name: String

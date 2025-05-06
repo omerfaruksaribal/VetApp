@@ -8,7 +8,7 @@ import UIKit
 
 class PetsViewController: UIViewController {
 
-    private var pets: [Pet] = [] // Şimdilik dummy data
+    private var pets = DummyDataLoader.load("pets", as: [Pet].self)
 
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -25,7 +25,7 @@ class PetsViewController: UIViewController {
         setupNavigationBar()
 
         // Test verisi
-        pets.append(Pet(name: "Pamuk", species: "Cat", breed: "Van", gender: "Female", birthDate: "2020-01-01"))
+        pets.append(Pet(id: 1, name: "Pamuk", species: "Cat", breed: "Van", gender: "Female", birthDate: "2020-01-01"))
     }
 
     private func setupTableView() {

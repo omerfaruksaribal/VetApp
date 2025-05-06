@@ -7,6 +7,7 @@
 import UIKit
 
 class DiagnosedPatientsViewController: UIViewController {
+
     private var diagnosedList: [DiagnosedPatient] = []
 
     private let tableView: UITableView = {
@@ -23,6 +24,7 @@ class DiagnosedPatientsViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupTableView()
         loadDummyData()
+        loadDiagnosedPatients()
     }
 
     private func setupTableView() {
@@ -43,6 +45,20 @@ class DiagnosedPatientsViewController: UIViewController {
             DiagnosedPatient(petName: "Tarçın", diagnosis: "Cilt enfeksiyonu", prescription: ["Krem A", "Antibiyotik"]),
             DiagnosedPatient(petName: "Fıstık", diagnosis: "İç parazit", prescription: ["Şurup X", "Vitamin"])
         ]
+    }
+
+    private func loadDiagnosedPatients() {
+        let diagnoses = DummyDataLoader.load("diagnoses", as: [Diagnosis].self)
+        let prescriptions = DummyDataLoader.load("prescriptions", as: [Prescription].self)
+        let pets = DummyDataLoader.load("pets", as: [Pet].self)
+
+        diagnosedList = diagnoses.map { d in
+            let pet = pets.first { $0.id == d.appointmentId }?.name ?? "Unknown"
+            let meds = prescriptions.filter { $0.diagnosisId == d.id }.map { $0.medicineName }
+            return DiagnosedPatient(petName: pet, diagnosis: d.description, prescription: meds)
+        }
+
+        tableView.reloadData()
     }
 }
 

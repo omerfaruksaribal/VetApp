@@ -4,12 +4,12 @@
 //
 //  Created by Ömerfaruk Saribal on 5.05.2025.
 //
-
-// PROBLEMLER VAR DÜZELT
 struct VetAppointment: Codable {
     let id: Int
+    let petId: Int
+    let vetId: Int
+    let vetName: String
     let petName: String
-    let ownerName: String
-    let date: String
-    let status: String // PENDING, COMPLETED
+    let status: String
+    let appointmentTime: String
 }

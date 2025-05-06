@@ -59,11 +59,26 @@ class DiagnosisViewController: UIViewController {
     }
 
     @objc private func saveDiagnosis() {
-        print("Diagnosis: \(diagnosisField.text ?? "")")
-        print("Notes: \(notesField.text ?? "")")
-        print("Medicines: \(medicineField.text ?? "")")
+        let diagnosis = Diagnosis(
+            id: UUID().hashValue,
+            appointmentId: appointment.id,
+            description: diagnosisField.text ?? "",
+            diagnosedAt: "2025-05-05T10:00:00",
+            notes: notesField.text ?? ""
+        )
+        LocalDataWriter.append("diagnoses", item: diagnosis)
 
-        // API ile tanı & reçete kaydı yapılacak
+        let meds = medicineField.text?.components(separatedBy: ",") ?? []
+        for med in meds {
+            let prescription = Prescription(
+                id: UUID().hashValue,
+                diagnosisId: diagnosis.id,
+                medicineName: med.trimmingCharacters(in: .whitespaces),
+                dosage: "",
+                instructions: ""
+            )
+            LocalDataWriter.append("prescriptions", item: prescription)
+        }
         navigationController?.popViewController(animated: true)
     }
 }

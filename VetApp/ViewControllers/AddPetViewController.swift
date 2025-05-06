@@ -53,12 +53,14 @@ class AddPetViewController: UIViewController {
 
     @objc private func savePet() {
         let newPet = Pet(
+            id: 1,
             name: nameField.text ?? "",
             species: speciesField.text ?? "",
             breed: breedField.text ?? "",
             gender: genderField.text ?? "",
             birthDate: birthDateField.text ?? ""
         )
+        LocalDataWriter.append("pets", item: newPet) // <- Custom file writer helper
         onPetAdded?(newPet)
         navigationController?.popViewController(animated: true)
     }

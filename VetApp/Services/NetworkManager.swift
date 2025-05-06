@@ -83,4 +83,40 @@ class NetworkManager {
         }.resume()
     }
 
+    // This has no usage.
+    func createAppointment(request: CreateAppointmentRequest, completion: @escaping (Result<String, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/appointments") else { return }
+
+        var urlRequest = URLRequest(url: url)
+        urlRequest.httpMethod = "POST"
+        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = UserDefaults.standard.string(forKey: "token") {
+            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        do {
+            urlRequest.httpBody = try JSONEncoder().encode(request)
+        } catch {
+            completion(.failure(error))
+            print("NetworkManager.swift -> createAppointment -> error1:", error)
+            return
+        }
+
+        URLSession.shared.dataTask(with: urlRequest) { data, response, error in
+            if let error = error {
+                completion(.failure(error))
+                print("NetworkManager.swift -> createAppointment -> error2:", error)
+                return
+            }
+
+            guard let data = data,
+                    let message = String(data: data, encoding: .utf8) else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+
+            completion(.success(message))
+        }.resume()
+    }
 }

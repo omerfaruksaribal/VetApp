@@ -109,9 +109,9 @@ class LoginViewController: UIViewController {
         let nextVC: UIViewController
 
         if role == "OWNER" {
-            nextVC = OwnerAppointmentsViewController()
+            nextVC = OwnerTabBarController()
         } else if role == "VET" {
-            nextVC = VetAppointmentsViewController()
+            nextVC = VetTabBarController()
         } else {
             showAlert(title: "Unknown Role", message: role)
             return

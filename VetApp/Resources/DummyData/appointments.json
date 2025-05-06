@@ -1,0 +1,21 @@
+[
+    {
+        "id": 1,
+        "petId": 1,
+        "vetId": 2,
+        "vetName": "Dr. Mahmut",
+        "petName": "Pamuk",
+        "status": "PENDING",
+        "appointmentTime": "2025-05-10T14:00:00"
+    },
+    {
+        "id": 2,
+        "petId": 2,
+        "vetId": 2,
+        "vetName": "Dr. Mahmut",
+        "petName": "Karabas",
+        "status": "CONFIRMED",
+        "appointmentTime": "2025-05-11T10:30:00"
+    }
+]
+
