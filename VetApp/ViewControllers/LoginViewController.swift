@@ -80,17 +80,22 @@ class LoginViewController: UIViewController {
 
     // MARK: - Actions
     @objc private func handleLogin() {
-        // Backend gelince burası gerçek veriden alınacak
-        let fakeRole = "OWNE" // ya da "VET"
+        guard let email = emailTextField.text, !email.isEmpty,
+                let password = passwordTextField.text, !password.isEmpty else {
+            showAlert(title: "Error", message: "Email and Password required")
+            return
+        }
 
-        if fakeRole == "OWNER" {
-            let vc = OwnerTabBarController()
-            vc.modalPresentationStyle = .fullScreen
-            present(vc, animated: true)
-        } else {
-            let vc = VetTabBarController()
-            vc.modalPresentationStyle = .fullScreen
-            present(vc, animated: true)
+        NetworkManager.shared.login(email: email, password: password) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let user):
+                    UserDefaults.standard.set(user.role, forKey: "role")
+                    self.navigationToHome(for: user.role)
+                case .failure(let error):
+                    self.showAlert(title: "Giriş Hatası", message: error.localizedDescription)
+                }
+            }
         }
     }
 
@@ -98,5 +103,27 @@ class LoginViewController: UIViewController {
     @objc private func handleGoToRegister() {
         let vc = RegisterViewController()
         navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func navigationToHome(for role: String) {
+        let nextVC: UIViewController
+
+        if role == "OWNER" {
+            nextVC = OwnerAppointmentsViewController()
+        } else if role == "VET" {
+            nextVC = VetAppointmentsViewController()
+        } else {
+            showAlert(title: "Unknown Role", message: role)
+            return
+        }
+        let nav = UINavigationController(rootViewController: nextVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
+
+    private func showAlert(title: String, message: String, onOK: (() -> Void)? = nil) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "Tamam", style: .default) { _ in onOK?() })
+        present(alert, animated: true)
     }
 }

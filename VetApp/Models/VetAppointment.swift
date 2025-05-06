@@ -5,7 +5,8 @@
 //  Created by Ömerfaruk Saribal on 5.05.2025.
 //
 
-struct VetAppointment {
+// PROBLEMLER VAR DÜZELT
+struct VetAppointment: Codable {
     let id: Int
     let petName: String
     let ownerName: String

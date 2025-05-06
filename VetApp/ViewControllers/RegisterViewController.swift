@@ -12,11 +12,16 @@ class RegisterViewController: UIViewController {
     // MARK: - UI Elements
     private let nameTextField = CustomTextField(placeholder: "Name")
     private let emailTextField = CustomTextField(placeholder: "Email")
-    private let passwordTextField = CustomTextField(placeholder: "Password", isSecure: true)
+    private let passwordTextField: UITextField = {
+        let tf = CustomTextField(placeholder: "Şifre")
+        tf.isSecureTextEntry = true
+        tf.textContentType = .oneTimeCode 
+        return tf
+    }()
     private let phoneTextField = CustomTextField(placeholder: "Phone")
 
     private let roleSegmentedControl: UISegmentedControl = {
-        let items = ["Owner", "Vet"]
+        let items = ["OWNER", "VET"]
         let sc = UISegmentedControl(items: items)
         sc.selectedSegmentIndex = 0
         sc.translatesAutoresizingMaskIntoConstraints = false
@@ -64,7 +69,53 @@ class RegisterViewController: UIViewController {
 
     // MARK: - Action
     @objc private func handleRegister() {
-        print("Register button tapped")
-        // API çağrısı burada yapılacak
+        guard
+            let name = nameTextField.text, !name.isEmpty,
+            let email = emailTextField.text, !email.isEmpty,
+            let password = passwordTextField.text, !password.isEmpty,
+            let phone = phoneTextField.text, !phone.isEmpty
+
+        else {
+            showAlert(title: "Error", message: "Fill all empty fields")
+            return
+        }
+        
+        let role = roleSegmentedControl.titleForSegment(at: roleSegmentedControl.selectedSegmentIndex) ?? "OWNER"
+        
+        let req = RegisterRequest(name: name, email: email, password: password, phone: phone, role: role)
+
+        NetworkManager.shared.register(user: req) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    self.showAlert(title: "Başarılı", message: "Kayıt başarılı, şimdi giriş yapabilirsiniz.")
+                case .failure(let error):
+                    self.showAlert(title: "Kayıt Hatası", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "Tamam", style: .default))
+        present(alert, animated: true)
+    }
+
+    private func navigateToHome(for role: String) {
+        let nextVC: UIViewController
+
+        if role == "OWNER" {
+            nextVC = OwnerAppointmentsViewController()
+        } else if role == "VET" {
+            nextVC = VetAppointmentsViewController()
+        } else {
+            showAlert(title: "Unknown role", message: role)
+            return
+        }
+
+        let nav = UINavigationController(rootViewController: nextVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 }
