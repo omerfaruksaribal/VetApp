@@ -43,6 +43,7 @@ class AddPetViewController: UIViewController {
         setupLayout()
 
         birthDateField.inputView = birthDatePicker
+        birthDateField.delegate = self
         birthDatePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
@@ -111,5 +112,14 @@ class AddPetViewController: UIViewController {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(.init(title: "Tamam", style: .default))
         present(alert, animated: true)
+    }
+}
+
+extension AddPetViewController: UITextFieldDelegate {
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == birthDateField {
+            return false
+        }
+        return true
     }
 }

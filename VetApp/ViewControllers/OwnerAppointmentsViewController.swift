@@ -23,6 +23,20 @@ class OwnerAppointmentsViewController: UIViewController {
         return button
     }()
 
+    private let datePicker: UIDatePicker = {
+        let datePicker = UIDatePicker()
+        datePicker.datePickerMode = .date
+        datePicker.preferredDatePickerStyle = .wheels
+        return datePicker
+    }()
+
+    private let timePicker: UIDatePicker = {
+        let timePicker = UIDatePicker()
+        timePicker.datePickerMode = .time
+        timePicker.preferredDatePickerStyle = .wheels
+        return timePicker
+    }()
+
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,6 +44,18 @@ class OwnerAppointmentsViewController: UIViewController {
         title = "Book Appointments"
         view.backgroundColor = .systemBackground
         setupLayout()
+
+        dateField.inputView = datePicker
+        timeField.inputView = timePicker
+
+        datePicker.tintColor = .clear
+        timePicker.tintColor = .clear
+
+        dateField.delegate = self
+        timeField.delegate = self
+
+        datePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
+        timePicker.addTarget(self, action: #selector(timeChanged), for: .valueChanged)
     }
 
     private func setupLayout() {
@@ -48,13 +74,6 @@ class OwnerAppointmentsViewController: UIViewController {
             stack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -32)
         ])
     }
-
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(.init(title: "OK", style: .default))
-        present(alert, animated: true)
-    }
-
 
     @objc private func handleCreateAppointment() {
         guard let petName = petField.text,
@@ -116,5 +135,32 @@ class OwnerAppointmentsViewController: UIViewController {
                 self.showAlert(title: "Pet Error", message: error.localizedDescription)
             }
         }
+    }
+
+    @objc private func dateChanged() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        dateField.text = formatter.string(from: datePicker.date)
+    }
+
+    @objc private func timeChanged() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        timeField.text = formatter.string(from: timePicker.date)
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+}
+
+extension OwnerAppointmentsViewController: UITextFieldDelegate {
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if textField == dateField || textField == timeField {
+            return false
+        }
+        return true
     }
 }
