@@ -59,26 +59,56 @@ class DiagnosisViewController: UIViewController {
     }
 
     @objc private func saveDiagnosis() {
-        let diagnosis = Diagnosis(
-            id: UUID().hashValue,
-            appointmentId: appointment.id,
-            description: diagnosisField.text ?? "",
-            diagnosedAt: "2025-05-05T10:00:00",
-            notes: notesField.text ?? ""
-        )
-        LocalDataWriter.append("diagnoses", item: diagnosis)
+        let description = diagnosisField.text ?? ""
+        let notes = notesField.text ?? ""
+        let medicineNames = medicineField
+            .text?
+            .components(separatedBy: ",")
+            .map { $0.trimmingCharacters(in: .whitespaces) } ?? []
 
-        let meds = medicineField.text?.components(separatedBy: ",") ?? []
-        for med in meds {
-            let prescription = Prescription(
-                id: UUID().hashValue,
-                diagnosisId: diagnosis.id,
-                medicineName: med.trimmingCharacters(in: .whitespaces),
-                dosage: "",
-                instructions: ""
-            )
-            LocalDataWriter.append("prescriptions", item: prescription)
+        NetworkManager.shared.createDiagnosis(appointmentId: appointment.id, description: description, notes: notes) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let diagnosis):
+                    let group = DispatchGroup()
+                    var errorOccured = false
+
+                    for name in medicineNames {
+                        group.enter()
+                        let prescription = Prescription(
+                            id: 0,
+                            diagnosisId: diagnosis.id,
+                            medicineName: name,
+                            dosage: "",
+                            instructions: ""
+                        )
+
+                        NetworkManager.shared.addPrescription(prescription: prescription) { result in
+                            if case .failure(_) = result {
+                                errorOccured = true
+                            }
+                            group.leave()
+                        }
+                    }
+
+                    group.notify(queue: .main) {
+                        if errorOccured {
+                            self.showAlert(title: "Error", message: "Failed to add all prescriptions")
+                        } else {
+                            self.navigationController?.popViewController(animated: true)
+                        }
+                    }
+
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
         }
-        navigationController?.popViewController(animated: true)
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(.init(title: "OK", style: .default))
+        present(alertController, animated: true)
     }
 }

@@ -52,10 +52,12 @@ class AddPetViewController: UIViewController {
     }
 
     @objc private func savePet() {
-        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
-           showAlert(title: "Error", message: "User info could not not be decoded.")
-           return
-       }
+        let ownerId = UserDefaults.standard.integer(forKey: "userId")
+
+        /* if ownerId == 0 {
+            showAlert(title: "Error", message: "User info could not not be decoded.")
+            return
+        } */
 
         let pet = Pet(
             id: nil,

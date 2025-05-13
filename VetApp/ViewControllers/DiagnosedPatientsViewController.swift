@@ -48,17 +48,58 @@ class DiagnosedPatientsViewController: UIViewController {
     }
 
     private func loadDiagnosedPatients() {
-        let diagnoses = DummyDataLoader.load("diagnoses", as: [Diagnosis].self)
-        let prescriptions = DummyDataLoader.load("prescriptions", as: [Prescription].self)
-        let pets = DummyDataLoader.load("pets", as: [Pet].self)
+        diagnosedList = []
+        let ownerId = UserDefaults.standard.integer(forKey: "userId")
 
-        diagnosedList = diagnoses.map { d in
-            let pet = pets.first { $0.id == d.appointmentId }?.name ?? "Unknown"
-            let meds = prescriptions.filter { $0.diagnosisId == d.id }.map { $0.medicineName }
-            return DiagnosedPatient(petName: pet, diagnosis: d.description, prescription: meds)
+        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
+            switch petResult {
+            case .success(let pets):
+                let group = DispatchGroup()
+
+                for pet in pets {
+                    group.enter()
+                    NetworkManager.shared.getDiagnosesByPetId(pet.id ?? 0) { diagResult in
+                        switch diagResult {
+                        case .success(let diagnoses):
+                            for diag in diagnoses {
+                                group.enter()
+                                NetworkManager.shared.getPrescriptionsByDiagnosisId(diag.id) { presResult in
+                                    switch presResult {
+                                    case .success(let prescriptions):
+                                        let medNames = prescriptions.map { $0.medicineName }
+                                        let diagnosed = DiagnosedPatient(
+                                            petName: pet.name,
+                                            diagnosis: diag.description,
+                                            prescription: medNames
+                                        )
+                                        self.diagnosedList.append(diagnosed)
+                                    case .failure(_): break
+                                    }
+                                    group.leave()
+                                }
+                            }
+                        case .failure(_): break
+                        }
+                        group.leave()
+                    }
+                }
+
+                group.notify(queue: .main) {
+                    self.tableView.reloadData()
+                }
+
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Hata", message: error.localizedDescription)
+                }
+            }
         }
+    }
 
-        tableView.reloadData()
+    private func showAlert(title: String, message: String) {
+        let alertContoller = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertContoller.addAction(.init(title: "OK", style: .default))
+        present(alertContoller, animated: true)
     }
 }
 

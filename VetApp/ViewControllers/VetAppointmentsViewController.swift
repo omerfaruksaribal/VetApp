@@ -38,10 +38,12 @@ class VetAppointmentsViewController: UIViewController {
     }
 
     private func loadAppointments() {
-        guard let vetId = String().decodeJWTPart()?["id"] as? Int else {
-            showAlert(title: "Error", message: "Could not get veterinary info")
+        let vetId = UserDefaults.standard.integer(forKey: "vetId")
+
+        /* if vetId == 0 {
+            showAlert(title: "Error", message: "Could not get veterinary info.")
             return
-        }
+        } */
 
         NetworkManager.shared.getAppointmentsForVet(vetId: vetId) { result in
             DispatchQueue.main.async {

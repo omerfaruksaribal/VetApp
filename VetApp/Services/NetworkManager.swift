@@ -337,5 +337,67 @@ class NetworkManager {
         }.resume()
     }
 
+    func getDiagnosesByPetId(_ petId: Int, completion: @escaping (Result<[Diagnosis], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/diagnoses/pet/\(petId)") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = UserDefaults.standard.string(forKey: "token") {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+
+            do {
+                let diagnoses = try JSONDecoder().decode([Diagnosis].self, from: data)
+                completion(.success(diagnoses))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    func getPrescriptionsByDiagnosisId(_ diagnosisId: Int, completion: @escaping (Result<[Prescription], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/prescriptions/\(diagnosisId)") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = UserDefaults.standard.string(forKey: "token") {
+            request.setValue("Bareer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                print("Network Manager -> Get Prescriptions By Diagnosis Id Error: \(error)")
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+
+            do {
+                let prescriptions = try JSONDecoder().decode([Prescription].self, from: data)
+                completion(.success(prescriptions))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
 }
 

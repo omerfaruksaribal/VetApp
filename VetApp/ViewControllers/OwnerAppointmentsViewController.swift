@@ -51,7 +51,7 @@ class OwnerAppointmentsViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(.init(title: "Tamam", style: .default))
+        alert.addAction(.init(title: "OK", style: .default))
         present(alert, animated: true)
     }
 
@@ -67,10 +67,12 @@ class OwnerAppointmentsViewController: UIViewController {
 
         let datetime = "\(date)T\(time)"
 
-        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
-            showAlert(title: "Error", message: "Could not get user info")
+        let ownerId = UserDefaults.standard.integer(forKey: "userId")
+
+        /* if ownerId == 0 {
+            showAlert(title: "Error", message: "User info could not not be decoded.")
             return
-        }
+        } */
 
         NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
             switch petResult {

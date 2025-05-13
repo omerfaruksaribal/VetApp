@@ -48,10 +48,12 @@ class PetsViewController: UIViewController {
     }
 
     private func loadPets() {
-        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
-            showAlert(title: "Error", message: "Could not get user info")
+        let ownerId = UserDefaults.standard.integer(forKey: "userId")
+
+        /* if ownerId == 0 {
+            showAlert(title: "Error", message: "User info could not not be decoded.")
             return
-        }
+        } */
 
         NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { result in
             DispatchQueue.main.async {
