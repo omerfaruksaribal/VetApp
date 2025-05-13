@@ -6,9 +6,16 @@
 //
 import UIKit
 
+struct Visit {
+    let vetName: String
+    let date: String
+    let diagnosis: String
+    let prescription: [String]
+}
+
 class VisitHistoryViewController: UIViewController {
 
-    private var visits: [Visit] = [] // Dummy data
+    private var visits: [Visit] = []
 
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -22,8 +29,65 @@ class VisitHistoryViewController: UIViewController {
         title = "Visit History"
         view.backgroundColor = .systemBackground
         setupTableView()
-        loadDummyData()
+        loadVisitHistory()
     }
+
+    private func loadVisitHistory() {
+        visits = []
+        let ownerId = UserDefaults.standard.integer(forKey: "userId")
+
+        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
+            switch petResult {
+            case .success(let pets):
+                let group = DispatchGroup()
+
+                for pet in pets {
+                    group.enter()
+                    NetworkManager.shared.getDiagnosesByPetId(pet.id ?? 0) { diagResult in
+                        switch diagResult {
+                        case .success(let diagnoses):
+                            for diag in diagnoses {
+                                group.enter()
+                                NetworkManager.shared.getPrescriptionsByDiagnosisId(diag.id) { presResult in
+                                    switch presResult {
+                                    case .success(let prescriptions):
+                                        let medNames = prescriptions.map { $0.medicineName }
+                                        let visit = Visit(
+                                            vetName: "Vet \(diag.id)", // MARK: Temporary soluition
+                                            date: String(diag.diagnosedAt.prefix(10)),
+                                            diagnosis: diag.description,
+                                            prescription: medNames
+                                        )
+                                        self.visits.append(visit)
+                                    case .failure(_): break
+                                    }
+                                    group.leave()
+                                }
+                            }
+                        case .failure(_): break
+                        }
+                        group.leave()
+                    }
+                }
+
+                group.notify(queue: .main) {
+                    self.tableView.reloadData()
+                }
+
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alertContoller = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertContoller.addAction(.init(title: "OK", style: .default))
+        present(alertContoller, animated: true)
+    }
+
 
     private func setupTableView() {
         view.addSubview(tableView)
@@ -36,25 +100,6 @@ class VisitHistoryViewController: UIViewController {
             tableView.rightAnchor.constraint(equalTo: view.rightAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-    }
-
-    private func loadDummyData() {
-        visits.append(
-            Visit(
-                vetName: "Dr. Ayşe K.",
-                date: "2024-12-15",
-                diagnosis: "Kedi gribi",
-                prescription: ["Antibiyotik", "Vitamin C"]
-            )
-        )
-        visits.append(
-            Visit(
-                vetName: "Dr. Mehmet T.",
-                date: "2025-01-10",
-                diagnosis: "Aşı takibi",
-                prescription: ["Aşı A", "Aşı B"]
-            )
-        )
     }
 }
 
