@@ -8,7 +8,7 @@ import UIKit
 
 class VetAppointmentsViewController: UIViewController {
 
-    private var appointments = DummyDataLoader.load("appointments", as: [VetAppointment].self)
+    private var appointments: [VetAppointment] = []
 
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -35,6 +35,31 @@ class VetAppointmentsViewController: UIViewController {
             tableView.rightAnchor.constraint(equalTo: view.rightAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
+    }
+
+    private func loadAppointments() {
+        guard let vetId = String().decodeJWTPart()?["id"] as? Int else {
+            showAlert(title: "Error", message: "Could not get veterinary info")
+            return
+        }
+
+        NetworkManager.shared.getAppointmentsForVet(vetId: vetId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let appointments):
+                    self.appointments = appointments
+                    self.tableView.reloadData()
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(.init(title: "Ok", style: .default))
+        present(alertController, animated: true)
     }
 }
 

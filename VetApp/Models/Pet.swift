@@ -11,4 +11,6 @@ struct Pet: Codable {
     let breed: String
     let gender: String
     let birthDate: String
+    let registeredAt: String?      // opsiyonel, create sırasında yok
+    let owner: UserReference?      // opsiyonel, create sırasında yok
 }

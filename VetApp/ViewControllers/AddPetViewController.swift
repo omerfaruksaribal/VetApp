@@ -52,16 +52,38 @@ class AddPetViewController: UIViewController {
     }
 
     @objc private func savePet() {
-        let newPet = Pet(
-            id: 1,
+        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
+           showAlert(title: "Error", message: "User info could not not be decoded.")
+           return
+       }
+
+        let pet = Pet(
+            id: nil,
             name: nameField.text ?? "",
             species: speciesField.text ?? "",
             breed: breedField.text ?? "",
             gender: genderField.text ?? "",
-            birthDate: birthDateField.text ?? ""
+            birthDate: birthDateField.text ?? "",
+            registeredAt: nil,
+            owner: nil
         )
-        LocalDataWriter.append("pets", item: newPet) // <- Custom file writer helper
-        onPetAdded?(newPet)
-        navigationController?.popViewController(animated: true)
+
+        NetworkManager.shared.addPet(pet: pet, ownerId: ownerId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let savedPet):
+                    self.onPetAdded?(savedPet)
+                    self.navigationController?.popViewController(animated: true)
+                case .failure(let error):
+                    self.showAlert(title: "Hata", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "Tamam", style: .default))
+        present(alert, animated: true)
     }
 }

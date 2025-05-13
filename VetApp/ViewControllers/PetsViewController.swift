@@ -8,7 +8,7 @@ import UIKit
 
 class PetsViewController: UIViewController {
 
-    private var pets = DummyDataLoader.load("pets", as: [Pet].self)
+    private var pets: [Pet] = []
 
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -23,9 +23,7 @@ class PetsViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupTableView()
         setupNavigationBar()
-
-        // Test verisi
-        pets.append(Pet(id: 1, name: "Pamuk", species: "Cat", breed: "Van", gender: "Female", birthDate: "2020-01-01"))
+        loadPets()
     }
 
     private func setupTableView() {
@@ -49,12 +47,38 @@ class PetsViewController: UIViewController {
         )
     }
 
+    private func loadPets() {
+        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
+            showAlert(title: "Error", message: "Could not get user info")
+            return
+        }
+
+        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let fetchedPets):
+                    self.pets = fetchedPets
+                    self.tableView.reloadData()
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "Ok", style: .default))
+        present(alert, animated: true)
+    }
+
+
     @objc private func addPetTapped() {
         let vc = AddPetViewController()
-        vc.onPetAdded = { [weak self] newPet in
-            self?.pets.append(newPet)
-            self?.tableView.reloadData()
+        vc.onPetAdded = { [weak self] _ in
+            self?.loadPets()
         }
+        
         navigationController?.pushViewController(vc, animated: true)
     }
 }

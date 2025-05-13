@@ -57,22 +57,62 @@ class OwnerAppointmentsViewController: UIViewController {
 
 
     @objc private func handleCreateAppointment() {
-        let petName = petField.text ?? ""
-        let vetName = vetField.text ?? ""
-        let date = dateField.text ?? ""
-        let time = timeField.text ?? ""
+        guard let petName = petField.text,
+              let vetName = vetField.text,
+              let date = dateField.text,
+              let time = timeField.text else {
+            showAlert(title: "Missing", message: "Fill all empty fields!")
+            return
+        }
+
         let datetime = "\(date)T\(time)"
 
-        let appointment = AppointmentResponse(
-            id: UUID().hashValue,
-            petID: 1, // Resolve from pet name in real case
-            vetID: 2, // Resolve from vet name
-            vetName: vetName,
-            petName: petName,
-            status: "PENDING",
-            appointmentTime: datetime
-        )
-        LocalDataWriter.append("appointments", item: appointment)
-        showAlert(title: "Success", message: "Appointment created!")
+        guard let ownerId = String().decodeJWTPart()?["id"] as? Int else {
+            showAlert(title: "Error", message: "Could not get user info")
+            return
+        }
+
+        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
+            switch petResult {
+            case .success(let pets):
+                guard let petId = pets.first(where: { $0.name == petName })?.id else {
+                    self.showAlert(title: "Error", message: "Could not find pet!")
+                    return
+                }
+
+                NetworkManager.shared.getAllVets { vetResult in
+                    switch vetResult {
+                    case .success(let vets):
+                        guard let vetId = vets.first(where: { $0.name == vetName })?.id else {
+                            self.showAlert(title: "Error", message: "Could not find vet!")
+                            return
+                        }
+
+                        let appointmentRequest = CreateAppointmentRequest(
+                            petID: petId,
+                            vetID: vetId,
+                            appointmentTime: datetime
+                        )
+
+                        NetworkManager.shared.createAppointment(request: appointmentRequest) { result in
+                            DispatchQueue.main.async {
+                                switch result {
+                                case .success(_):
+                                    self.showAlert(title: "Success", message: "Appointment Created Successfully")
+                                case .failure(let error):
+                                    self.showAlert(title: "Error", message: error.localizedDescription)
+                                }
+                            }
+                        }
+
+                    case .failure(let error):
+                        self.showAlert(title: "Vet Error", message: error.localizedDescription)
+                    }
+                }
+
+            case .failure(let error):
+                self.showAlert(title: "Pet Error", message: error.localizedDescription)
+            }
+        }
     }
 }
