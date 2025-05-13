@@ -6,13 +6,6 @@
 //
 import UIKit
 
-struct Visit {
-    let vetName: String
-    let date: String
-    let diagnosis: String
-    let prescription: [String]
-}
-
 class VisitCell: UITableViewCell {
 
     private let titleLabel = UILabel()

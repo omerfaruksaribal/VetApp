@@ -16,6 +16,14 @@ class AddPetViewController: UIViewController {
     private let genderField = CustomTextField(placeholder: "Gender")
     private let birthDateField = CustomTextField(placeholder: "Birth Date (YYYY-MM-DD)")
 
+    private let birthDatePicker: UIDatePicker = {
+        let datePicker = UIDatePicker()
+        datePicker.datePickerMode = .date
+        datePicker.preferredDatePickerStyle = .wheels
+        datePicker.maximumDate = Date()
+        return datePicker
+    }()
+
     private let saveButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setTitle("Save", for: .normal)
@@ -31,7 +39,13 @@ class AddPetViewController: UIViewController {
         super.viewDidLoad()
         title = "Add Pet"
         view.backgroundColor = .systemBackground
+
         setupLayout()
+
+        birthDateField.inputView = birthDatePicker
+        birthDatePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
+
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
     }
 
     private func setupLayout() {
@@ -81,6 +95,16 @@ class AddPetViewController: UIViewController {
                 }
             }
         }
+    }
+
+    @objc private func dateChanged() {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        birthDateField.text = formatter.string(from: birthDatePicker.date)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     private func showAlert(title: String, message: String) {
