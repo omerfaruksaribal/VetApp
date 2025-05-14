@@ -67,6 +67,13 @@ class OwnerAppointmentsViewController: UIViewController {
 
         let tapGestures = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGestures)
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.crop.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showUserOptions)
+        )
     }
 
     private func setupLayout() {
@@ -195,6 +202,31 @@ class OwnerAppointmentsViewController: UIViewController {
         })
         present(alert, animated: true)
     }
+
+    @objc private func showUserOptions() {
+        let alert = UIAlertController(title: "Account", message: nil, preferredStyle: .actionSheet)
+
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
+            self.handleLogout()
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        present(alert, animated: true)
+    }
+
+    private func handleLogout() {
+        UserDefaults.standard.removeObject(forKey: "userId")
+        UserDefaults.standard.removeObject(forKey: "role")
+        UserDefaults.standard.removeObject(forKey: "token")
+
+        // LoginViewController'a yönlendirme
+        let loginVC = LoginViewController()
+        let nav = UINavigationController(rootViewController: loginVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
+
 
 }
 

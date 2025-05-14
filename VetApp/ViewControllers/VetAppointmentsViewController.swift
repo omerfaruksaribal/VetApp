@@ -22,6 +22,13 @@ class VetAppointmentsViewController: UIViewController {
         title = "Appointments"
         view.backgroundColor = .systemBackground
         setupTableView()
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.crop.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showUserOptions)
+        )
     }
 
     private func setupTableView() {
@@ -62,6 +69,30 @@ class VetAppointmentsViewController: UIViewController {
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertController.addAction(.init(title: "Ok", style: .default))
         present(alertController, animated: true)
+    }
+
+    @objc private func showUserOptions() {
+        let alert = UIAlertController(title: "Account", message: nil, preferredStyle: .actionSheet)
+
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
+            self.handleLogout()
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        present(alert, animated: true)
+    }
+
+    private func handleLogout() {
+        UserDefaults.standard.removeObject(forKey: "userId")
+        UserDefaults.standard.removeObject(forKey: "role")
+        UserDefaults.standard.removeObject(forKey: "token")
+
+        // LoginViewController
+        let loginVC = LoginViewController()
+        let nav = UINavigationController(rootViewController: loginVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 }
 

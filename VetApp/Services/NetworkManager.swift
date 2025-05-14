@@ -84,6 +84,8 @@ class NetworkManager {
     }
 
     func createAppointment(request: CreateAppointmentRequest, completion: @escaping (Result<String, Error>) -> Void) {
+        print("APPOINTMENT REQUEST:", request)
+
         guard let url = URL(string: "\(baseURL)/appointments") else { return }
 
         var urlRequest = URLRequest(url: url)

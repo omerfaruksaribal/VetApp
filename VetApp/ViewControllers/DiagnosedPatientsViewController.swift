@@ -23,8 +23,14 @@ class DiagnosedPatientsViewController: UIViewController {
         title = "Patients"
         view.backgroundColor = .systemBackground
         setupTableView()
-        loadDummyData()
         loadDiagnosedPatients()
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.crop.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showUserOptions)
+        )
     }
 
     private func setupTableView() {
@@ -38,13 +44,6 @@ class DiagnosedPatientsViewController: UIViewController {
             tableView.rightAnchor.constraint(equalTo: view.rightAnchor),
             tableView.leftAnchor.constraint(equalTo: view.leftAnchor)
         ])
-    }
-
-    private func loadDummyData() {
-        diagnosedList = [
-            DiagnosedPatient(petName: "Tarçın", diagnosis: "Cilt enfeksiyonu", prescription: ["Krem A", "Antibiyotik"]),
-            DiagnosedPatient(petName: "Fıstık", diagnosis: "İç parazit", prescription: ["Şurup X", "Vitamin"])
-        ]
     }
 
     private func loadDiagnosedPatients() {
@@ -100,6 +99,30 @@ class DiagnosedPatientsViewController: UIViewController {
         let alertContoller = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alertContoller.addAction(.init(title: "OK", style: .default))
         present(alertContoller, animated: true)
+    }
+
+    @objc private func showUserOptions() {
+        let alert = UIAlertController(title: "Account", message: nil, preferredStyle: .actionSheet)
+
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
+            self.handleLogout()
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        present(alert, animated: true)
+    }
+
+    private func handleLogout() {
+        UserDefaults.standard.removeObject(forKey: "userId")
+        UserDefaults.standard.removeObject(forKey: "role")
+        UserDefaults.standard.removeObject(forKey: "token")
+
+        // LoginViewController
+        let loginVC = LoginViewController()
+        let nav = UINavigationController(rootViewController: loginVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 }
 

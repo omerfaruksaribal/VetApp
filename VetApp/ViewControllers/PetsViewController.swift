@@ -24,6 +24,13 @@ class PetsViewController: UIViewController {
         setupTableView()
         setupNavigationBar()
         loadPets()
+
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.crop.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showUserOptions)
+        )
     }
 
     private func setupTableView() {
@@ -74,7 +81,6 @@ class PetsViewController: UIViewController {
         present(alert, animated: true)
     }
 
-
     @objc private func addPetTapped() {
         let vc = AddPetViewController()
         vc.onPetAdded = { [weak self] _ in
@@ -83,6 +89,31 @@ class PetsViewController: UIViewController {
         
         navigationController?.pushViewController(vc, animated: true)
     }
+
+    @objc private func showUserOptions() {
+        let alert = UIAlertController(title: "Account", message: nil, preferredStyle: .actionSheet)
+
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
+            self.handleLogout()
+        })
+
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        present(alert, animated: true)
+    }
+
+    private func handleLogout() {
+        UserDefaults.standard.removeObject(forKey: "userId")
+        UserDefaults.standard.removeObject(forKey: "role")
+        UserDefaults.standard.removeObject(forKey: "token")
+
+        // LoginViewController
+        let loginVC = LoginViewController()
+        let nav = UINavigationController(rootViewController: loginVC)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
+
 }
 
 extension PetsViewController: UITableViewDelegate, UITableViewDataSource {
@@ -95,5 +126,11 @@ extension PetsViewController: UITableViewDelegate, UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = "\(pet.name) • \(pet.species) • \(pet.breed)"
         return cell
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let pet = pets[indexPath.row]
+        let detailVC = PetDetailViewController(pet: pet)
+        navigationController?.pushViewController(detailVC, animated: true)
     }
 }
