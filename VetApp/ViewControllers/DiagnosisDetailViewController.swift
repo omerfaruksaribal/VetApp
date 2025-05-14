@@ -1,9 +1,3 @@
-//
-//  DiagnosisDetailViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 5.05.2025.
-//
 import UIKit
 
 class DiagnosisDetailViewController: UIViewController {

@@ -90,7 +90,7 @@ class LoginViewController: UIViewController {
             DispatchQueue.main.async {
                 switch result {
                 case .success(let user):
-                    UserDefaults.standard.set(user.id, forKey: "userId") 
+                    UserDefaults.standard.set(user.id, forKey: "userId")
                     UserDefaults.standard.set(user.role, forKey: "role")
                     self.navigationToHome(for: user.role)
                 case .failure(let error):

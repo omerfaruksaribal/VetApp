@@ -1,9 +1,3 @@
-//
-//  VisitHistoryViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 4.05.2025.
-//
 import UIKit
 
 class VisitHistoryViewController: UIViewController {
@@ -53,7 +47,7 @@ class VisitHistoryViewController: UIViewController {
                                     case .success(let prescriptions):
                                         let medNames = prescriptions.map { $0.medicineName }
                                         let visit = Visit(
-                                            vetName: "Vet \(diag.id)", // MARK: Temporary soluition
+                                            vetName: "Vet \(diag.id)", // 🟡 TEMPORARY
                                             date: String(diag.diagnosedAt.prefix(10)),
                                             diagnosis: diag.description,
                                             prescription: medNames
@@ -116,7 +110,6 @@ class VisitHistoryViewController: UIViewController {
     private func handleLogout() {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "role")
-        UserDefaults.standard.removeObject(forKey: "token")
 
         // LoginViewController'a yönlendirme
         let loginVC = LoginViewController()

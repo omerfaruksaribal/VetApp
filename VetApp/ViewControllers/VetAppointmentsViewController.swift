@@ -1,9 +1,3 @@
-//
-//  VetAppointmentsViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 4.05.2025.
-//
 import UIKit
 
 class VetAppointmentsViewController: UIViewController {
@@ -22,6 +16,7 @@ class VetAppointmentsViewController: UIViewController {
         title = "Appointments"
         view.backgroundColor = .systemBackground
         setupTableView()
+        loadAppointments()
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "person.crop.circle"),
@@ -45,7 +40,7 @@ class VetAppointmentsViewController: UIViewController {
     }
 
     private func loadAppointments() {
-        let vetId = UserDefaults.standard.integer(forKey: "vetId")
+        let vetId = UserDefaults.standard.integer(forKey: "userId")
 
         /* if vetId == 0 {
             showAlert(title: "Error", message: "Could not get veterinary info.")
@@ -86,7 +81,6 @@ class VetAppointmentsViewController: UIViewController {
     private func handleLogout() {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "role")
-        UserDefaults.standard.removeObject(forKey: "token")
 
         // LoginViewController
         let loginVC = LoginViewController()
@@ -104,7 +98,7 @@ extension VetAppointmentsViewController: UITableViewDelegate, UITableViewDataSou
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let app = appointments[indexPath.row]
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = "\(app.petName) - \(app.appointmentTime) (\(app.status))"
+        cell.textLabel?.text = "\(app.pet.name) - \(app.appointmentTime) (\(app.status))"
         return cell
     }
 

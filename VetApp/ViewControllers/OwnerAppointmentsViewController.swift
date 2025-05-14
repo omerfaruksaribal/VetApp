@@ -1,9 +1,3 @@
-//
-//  OwnerAppointmentsViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 4.05.2025.
-//
 import UIKit
 
 class OwnerAppointmentsViewController: UIViewController {
@@ -155,7 +149,7 @@ class OwnerAppointmentsViewController: UIViewController {
         }
 
         let datetime = "\(date)T\(time)"
-        let request = CreateAppointmentRequest(petID: petId, vetID: vetId, appointmentTime: datetime)
+        let request = CreateAppointmentRequest(petId: petId, vetId: vetId, appointmentTime: datetime)
 
         NetworkManager.shared.createAppointment(request: request) { result in
             DispatchQueue.main.async {
@@ -218,7 +212,6 @@ class OwnerAppointmentsViewController: UIViewController {
     private func handleLogout() {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "role")
-        UserDefaults.standard.removeObject(forKey: "token")
 
         // LoginViewController'a yönlendirme
         let loginVC = LoginViewController()

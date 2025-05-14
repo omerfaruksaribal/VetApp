@@ -1,9 +1,3 @@
-//
-//  DiagnosedPatientsViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 4.05.2025.
-//
 import UIKit
 
 class DiagnosedPatientsViewController: UIViewController {
@@ -116,7 +110,6 @@ class DiagnosedPatientsViewController: UIViewController {
     private func handleLogout() {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "role")
-        UserDefaults.standard.removeObject(forKey: "token")
 
         // LoginViewController
         let loginVC = LoginViewController()

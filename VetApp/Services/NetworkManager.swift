@@ -1,9 +1,3 @@
-//
-//  NetworkManager.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 5.05.2025.
-//
 import Foundation
 
 class NetworkManager {
@@ -84,17 +78,11 @@ class NetworkManager {
     }
 
     func createAppointment(request: CreateAppointmentRequest, completion: @escaping (Result<String, Error>) -> Void) {
-        print("APPOINTMENT REQUEST:", request)
-
         guard let url = URL(string: "\(baseURL)/appointments") else { return }
 
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            urlRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
 
         do {
             urlRequest.httpBody = try JSONEncoder().encode(request)
@@ -125,10 +113,6 @@ class NetworkManager {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
 
         let body: [String: Any] = [
             "name": pet.name,
@@ -173,10 +157,6 @@ class NetworkManager {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bareer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
@@ -203,10 +183,6 @@ class NetworkManager {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bareer \(token)", forHTTPHeaderField: "Authorization")
-        }
 
         URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error {
@@ -236,10 +212,6 @@ class NetworkManager {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bareer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error {
                 completion(.failure(error))
@@ -268,10 +240,6 @@ class NetworkManager {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         let body: [String: Any] = [
             "appointmentId": appointmentId,
             "description": description,
@@ -280,6 +248,7 @@ class NetworkManager {
 
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            print("Diagnosis Request Body:", String(data: request.httpBody!, encoding: .utf8) ?? "invalid")
         } catch {
             completion(.failure(error))
             return
@@ -312,10 +281,6 @@ class NetworkManager {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         do {
             request.httpBody = try JSONEncoder().encode(prescription)
         } catch {
@@ -346,10 +311,6 @@ class NetworkManager {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error {
                 completion(.failure(error))
@@ -377,10 +338,6 @@ class NetworkManager {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        if let token = UserDefaults.standard.string(forKey: "token") {
-            request.setValue("Bareer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
         URLSession.shared.dataTask(with: request) { data, _, error in
             if let error = error {
                 completion(.failure(error))
@@ -402,6 +359,5 @@ class NetworkManager {
         }.resume()
     }
 
-    
 }
 

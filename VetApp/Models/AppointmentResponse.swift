@@ -6,8 +6,8 @@
 //
 struct AppointmentResponse: Codable {
     let id: Int
-    let petID: Int
-    let vetID: Int
+    let petId: Int
+    let vetId: Int
     let vetName: String
     let petName: String
     let status: String

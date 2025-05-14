@@ -1,9 +1,3 @@
-//
-//  AddPetViewController.swift
-//  VetApp
-//
-//  Created by Ömerfaruk Saribal on 4.05.2025.
-//
 import UIKit
 
 class AddPetViewController: UIViewController {
