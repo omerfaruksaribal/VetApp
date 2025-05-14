@@ -7,6 +7,16 @@
 import UIKit
 
 class OwnerAppointmentsViewController: UIViewController {
+
+    private let petPicker = UIPickerView()
+    private let vetPicker = UIPickerView()
+
+    private var pets: [Pet] = []
+    private var vets: [UserResponse] = []
+
+    private var selectedPetId: Int?
+    private var selectedVetId: Int?
+
     private let petField = CustomTextField(placeholder: "Pet Name")
     private let vetField = CustomTextField(placeholder: "Vet Name")
     private let dateField = CustomTextField(placeholder: "Appointment Date (YYYY-MM-DD)")
@@ -45,17 +55,18 @@ class OwnerAppointmentsViewController: UIViewController {
         view.backgroundColor = .systemBackground
         setupLayout()
 
-        dateField.inputView = datePicker
-        timeField.inputView = timePicker
+        /* navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.left"),
+            style: .plain,
+            target: self,
+            action: #selector(handleBackbutton)
+        ) */
 
-        datePicker.tintColor = .clear
-        timePicker.tintColor = .clear
+        setupFieldsAndPickers()
+        loadPickerData()
 
-        dateField.delegate = self
-        timeField.delegate = self
-
-        datePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
-        timePicker.addTarget(self, action: #selector(timeChanged), for: .valueChanged)
+        let tapGestures = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGestures)
     }
 
     private func setupLayout() {
@@ -75,66 +86,94 @@ class OwnerAppointmentsViewController: UIViewController {
         ])
     }
 
+    private func loadPickerData() {
+        let userId = UserDefaults.standard.integer(forKey: "userId")
+
+        NetworkManager.shared.getPetsByOwner(ownerId: userId) { result in
+            DispatchQueue.main.async {
+                if case .success(let data) = result {
+                    self.pets = data
+                    self.petPicker.reloadAllComponents()
+                }
+            }
+        }
+
+        NetworkManager.shared.getAllVets { result in
+            DispatchQueue.main.async {
+                if case .success(let data) = result {
+                    self.vets = data
+                    self.vetPicker.reloadAllComponents()
+                }
+            }
+        }
+    }
+
+    private func setupFieldsAndPickers() {
+        dateField.inputView = datePicker
+        timeField.inputView = timePicker
+        petField.inputView = petPicker
+        vetField.inputView = vetPicker
+
+        datePicker.tintColor = .clear
+        timePicker.tintColor = .clear
+        petField.tintColor = .clear
+        vetField.tintColor = .clear
+
+        dateField.delegate = self
+        timeField.delegate = self
+        petField.delegate = self
+        vetField.delegate = self
+
+        petPicker.delegate = self
+        petPicker.dataSource = self
+
+        vetPicker.delegate = self
+        vetPicker.dataSource = self
+
+        datePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
+        timePicker.addTarget(self, action: #selector(timeChanged), for: .valueChanged)
+
+
+    }
+
     @objc private func handleCreateAppointment() {
-        guard let petName = petField.text,
-              let vetName = vetField.text,
-              let date = dateField.text,
-              let time = timeField.text else {
-            showAlert(title: "Missing", message: "Fill all empty fields!")
+        guard
+            let date = dateField.text,
+            let time = timeField.text,
+            let petId = self.selectedPetId,
+            let vetId = self.selectedVetId
+        else {
+            showAlert(title: "Missing", message: "Fill all missing fields")
             return
         }
 
         let datetime = "\(date)T\(time)"
+        let request = CreateAppointmentRequest(petID: petId, vetID: vetId, appointmentTime: datetime)
 
-        let ownerId = UserDefaults.standard.integer(forKey: "userId")
-
-        /* if ownerId == 0 {
-            showAlert(title: "Error", message: "User info could not not be decoded.")
-            return
-        } */
-
-        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
-            switch petResult {
-            case .success(let pets):
-                guard let petId = pets.first(where: { $0.name == petName })?.id else {
-                    self.showAlert(title: "Error", message: "Could not find pet!")
-                    return
-                }
-
-                NetworkManager.shared.getAllVets { vetResult in
-                    switch vetResult {
-                    case .success(let vets):
-                        guard let vetId = vets.first(where: { $0.name == vetName })?.id else {
-                            self.showAlert(title: "Error", message: "Could not find vet!")
-                            return
-                        }
-
-                        let appointmentRequest = CreateAppointmentRequest(
-                            petID: petId,
-                            vetID: vetId,
-                            appointmentTime: datetime
-                        )
-
-                        NetworkManager.shared.createAppointment(request: appointmentRequest) { result in
-                            DispatchQueue.main.async {
-                                switch result {
-                                case .success(_):
-                                    self.showAlert(title: "Success", message: "Appointment Created Successfully")
-                                case .failure(let error):
-                                    self.showAlert(title: "Error", message: error.localizedDescription)
-                                }
-                            }
-                        }
-
-                    case .failure(let error):
-                        self.showAlert(title: "Vet Error", message: error.localizedDescription)
+        NetworkManager.shared.createAppointment(request: request) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    self.petField.text = ""
+                    self.vetField.text = ""
+                    self.dateField.text = ""
+                    self.timeField.text = ""
+                    self.showAlert(title: "Success", message: "Appointment created successfully") {
+                        self.tabBarController?.selectedIndex = 0
                     }
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
                 }
-
-            case .failure(let error):
-                self.showAlert(title: "Pet Error", message: error.localizedDescription)
             }
         }
+    }
+
+    @objc private func handleBackbutton() {
+        tabBarController?.selectedIndex = 0
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     @objc private func dateChanged() {
@@ -149,18 +188,48 @@ class OwnerAppointmentsViewController: UIViewController {
         timeField.text = formatter.string(from: timePicker.date)
     }
 
-    private func showAlert(title: String, message: String) {
+    private func showAlert(title: String, message: String, onOK: (() -> Void)? = nil) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(.init(title: "OK", style: .default))
+        alert.addAction(.init(title: "OK", style: .default) { _ in
+            onOK?()
+        })
         present(alert, animated: true)
     }
+
 }
 
-extension OwnerAppointmentsViewController: UITextFieldDelegate {
+extension OwnerAppointmentsViewController: UITextFieldDelegate, UIPickerViewDelegate, UIPickerViewDataSource {
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        if textField == dateField || textField == timeField {
+        if textField == dateField || textField == timeField || textField == petField || textField == vetField {
             return false
         }
         return true
+    }
+
+    func numberOfComponents(in pickerView: UIPickerView) -> Int { 1 }
+
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        if pickerView == petPicker { return pets.count }
+        if pickerView == vetPicker { return vets.count }
+        return 0
+    }
+
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        if pickerView == petPicker { return pets[row].name }
+        if pickerView == vetPicker { return vets[row].name }
+        return nil
+    }
+
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if pickerView == petPicker {
+            let selected = pets[row]
+            petField.text = selected.name
+            selectedPetId = selected.id
+        }
+        if pickerView == vetPicker {
+            let selected = vets[row]
+            vetField.text = selected.name
+            selectedVetId = selected.id
+        }
     }
 }

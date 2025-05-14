@@ -13,7 +13,7 @@ class RegisterViewController: UIViewController {
     private let nameTextField = CustomTextField(placeholder: "Name")
     private let emailTextField = CustomTextField(placeholder: "Email")
     private let passwordTextField: UITextField = {
-        let tf = CustomTextField(placeholder: "Şifre")
+        let tf = CustomTextField(placeholder: "Password")
         tf.isSecureTextEntry = true
         tf.textContentType = .oneTimeCode 
         return tf
@@ -88,19 +88,28 @@ class RegisterViewController: UIViewController {
             DispatchQueue.main.async {
                 switch result {
                 case .success(_):
-                    self.showAlert(title: "Başarılı", message: "Kayıt başarılı, şimdi giriş yapabilirsiniz.")
+                    self.nameTextField.text = ""
+                    self.emailTextField.text = ""
+                    self.passwordTextField.text = ""
+                    self.phoneTextField.text = ""
+                    self.showAlert(title: "Successfull", message: "Successfully registered, you can login now.") {
+                        self.navigationController?.popViewController(animated: true)
+                    }
                 case .failure(let error):
-                    self.showAlert(title: "Kayıt Hatası", message: error.localizedDescription)
+                    self.showAlert(title: "Register Error", message: error.localizedDescription)
                 }
             }
         }
     }
 
-    private func showAlert(title: String, message: String) {
+    private func showAlert(title: String, message: String, onOK: (() -> Void)? = nil) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(.init(title: "Tamam", style: .default))
+        alert.addAction(.init(title: "OK", style: .default) { _ in
+            onOK?()
+        })
         present(alert, animated: true)
     }
+
 
     private func navigateToHome(for role: String) {
         let nextVC: UIViewController

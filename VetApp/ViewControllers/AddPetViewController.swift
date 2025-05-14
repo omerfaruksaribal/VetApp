@@ -47,6 +47,7 @@ class AddPetViewController: UIViewController {
         birthDatePicker.addTarget(self, action: #selector(dateChanged), for: .valueChanged)
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tap)
     }
 
     private func setupLayout() {
