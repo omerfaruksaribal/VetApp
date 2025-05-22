@@ -135,8 +135,7 @@ class VetAppointmentsViewController: UIViewController {
                         let alert = UIAlertController(title: "Add Diagnosis", message: "Would you like to add a diagnosis for this appointment?", preferredStyle: .alert)
                         
                         alert.addAction(UIAlertAction(title: "Add Diagnosis", style: .default) { [weak self] _ in
-                            let diagnosisVC = DiagnosisViewController(appointment: self?.appointments[index] ?? appointment)
-                            self?.navigationController?.pushViewController(diagnosisVC, animated: true)
+                            self?.showDiagnosisViewController(for: appointment)
                         })
                         
                         alert.addAction(UIAlertAction(title: "Later", style: .cancel))
@@ -149,6 +148,13 @@ class VetAppointmentsViewController: UIViewController {
                 }
             }
         }
+    }
+
+    private func showDiagnosisViewController(for appointment: VetAppointment) {
+        let diagnosisVC = DiagnosisViewController(appointment: appointment) { [weak self] in
+            self?.loadAppointments()
+        }
+        navigationController?.pushViewController(diagnosisVC, animated: true)
     }
 }
 

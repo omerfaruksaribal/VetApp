@@ -46,6 +46,13 @@ class PetsViewController: UIViewController {
             target: self,
             action: #selector(addPetTapped)
         )
+        
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "person.crop.circle"),
+            style: .plain,
+            target: self,
+            action: #selector(showUserOptions)
+        )
     }
 
     private func loadPets() {
@@ -123,7 +130,9 @@ extension PetsViewController: UITableViewDelegate, UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let pet = pets[indexPath.row]
-        let detailVC = PetDetailViewController(pet: pet)
+        let detailVC = PetDetailViewController(pet: pet) { [weak self] in
+            self?.loadPets()
+        }
         navigationController?.pushViewController(detailVC, animated: true)
     }
 }

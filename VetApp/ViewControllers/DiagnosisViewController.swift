@@ -3,6 +3,7 @@ import UIKit
 class DiagnosisViewController: UIViewController {
 
     private let appointment: VetAppointment
+    private let onDiagnosisCreated: () -> Void
 
     private let diagnosisField = CustomTextField(placeholder: "Diagnosis")
     private let notesField = CustomTextField(placeholder: "Notes")
@@ -19,8 +20,9 @@ class DiagnosisViewController: UIViewController {
         return btn
     }()
 
-    init(appointment: VetAppointment) {
+    init(appointment: VetAppointment, onDiagnosisCreated: @escaping () -> Void) {
         self.appointment = appointment
+        self.onDiagnosisCreated = onDiagnosisCreated
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -60,21 +62,14 @@ class DiagnosisViewController: UIViewController {
             .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) } ?? []
 
-        print("Creating diagnosis with data:")
-        print("Description: \(description)")
-        print("Notes: \(notes)")
-        print("Medicines: \(medicineNames)")
-
         NetworkManager.shared.createDiagnosis(appointmentId: appointment.id, description: description, notes: notes) { [weak self] result in
             guard let self = self else { return }
             
             DispatchQueue.main.async {
                 switch result {
                 case .success(let diagnosis):
-                    print("Successfully created diagnosis with ID: \(diagnosis.id)")
-                    
                     if medicineNames.isEmpty {
-                        print("No prescriptions to add")
+                        self.onDiagnosisCreated()
                         self.navigationController?.popViewController(animated: true)
                         return
                     }
@@ -85,7 +80,6 @@ class DiagnosisViewController: UIViewController {
                     
                     for name in medicineNames {
                         group.enter()
-                        print("Creating prescription for medicine: \(name)")
                         NetworkManager.shared.createPrescription(
                             diagnosisId: diagnosis.id,
                             medicineName: name,
@@ -94,10 +88,8 @@ class DiagnosisViewController: UIViewController {
                         ) { result in
                             switch result {
                             case .success(let prescription):
-                                print("Successfully created prescription for: \(prescription.medicineName)")
                                 successfulPrescriptions.append(prescription.medicineName)
                             case .failure(let error):
-                                print("Error creating prescription for \(name): \(error.localizedDescription)")
                                 prescriptionErrors.append("\(name): \(error.localizedDescription)")
                             }
                             group.leave()
@@ -115,11 +107,11 @@ class DiagnosisViewController: UIViewController {
                         } else {
                             self.showAlert(title: "Success", message: "Successfully added all prescriptions")
                         }
+                        self.onDiagnosisCreated()
                         self.navigationController?.popViewController(animated: true)
                     }
                     
                 case .failure(let error):
-                    print("Error creating diagnosis: \(error.localizedDescription)")
                     self.showAlert(title: "Error", message: "Failed to create diagnosis: \(error.localizedDescription)")
                 }
             }

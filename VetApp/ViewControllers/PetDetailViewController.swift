@@ -4,6 +4,7 @@ class PetDetailViewController: UIViewController {
     private let pet: Pet
     private var appointments: [VetAppointment] = []
     private var diagnoses: [Diagnosis] = []
+    private let onDelete: () -> Void
     
     private let tableView: UITableView = {
         let tv = UITableView()
@@ -11,9 +12,21 @@ class PetDetailViewController: UIViewController {
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
+    
+    private let deleteButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Delete Pet", for: .normal)
+        button.backgroundColor = .systemRed
+        button.setTitleColor(.white, for: .normal)
+        button.layer.cornerRadius = 8
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(deleteButtonTapped), for: .touchUpInside)
+        return button
+    }()
 
-    init(pet: Pet) {
+    init(pet: Pet, onDelete: @escaping () -> Void) {
         self.pet = pet
+        self.onDelete = onDelete
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -46,6 +59,7 @@ class PetDetailViewController: UIViewController {
 
         view.addSubview(stack)
         view.addSubview(tableView)
+        view.addSubview(deleteButton)
 
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -55,7 +69,12 @@ class PetDetailViewController: UIViewController {
             tableView.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 20),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            tableView.bottomAnchor.constraint(equalTo: deleteButton.topAnchor, constant: -20),
+            
+            deleteButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            deleteButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            deleteButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            deleteButton.heightAnchor.constraint(equalToConstant: 50)
         ])
         
         tableView.delegate = self
@@ -116,6 +135,33 @@ class PetDetailViewController: UIViewController {
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    @objc private func deleteButtonTapped() {
+        let alert = UIAlertController(
+            title: "Delete Pet",
+            message: "Are you sure you want to delete \(pet.name)? This action cannot be undone.",
+            preferredStyle: .alert
+        )
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in
+            guard let self = self else { return }
+            
+            NetworkManager.shared.deletePet(petId: self.pet.id ?? -1) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        self.onDelete()
+                        self.navigationController?.popViewController(animated: true)
+                    case .failure(let error):
+                        self.showAlert(title: "Error", message: "Failed to delete pet: \(error.localizedDescription)")
+                    }
+                }
+            }
+        })
+        
         present(alert, animated: true)
     }
 }
