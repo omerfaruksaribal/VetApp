@@ -62,32 +62,68 @@ class AddPetViewController: UIViewController {
     }
 
     @objc private func savePet() {
-        let ownerId = UserDefaults.standard.integer(forKey: "userId")
-
-        /* if ownerId == 0 {
-            showAlert(title: "Error", message: "User info could not not be decoded.")
+        // Validate fields
+        guard let name = nameField.text, !name.isEmpty else {
+            showAlert(title: "Error", message: "Please enter a pet name")
             return
-        } */
+        }
+        
+        guard let species = speciesField.text, !species.isEmpty else {
+            showAlert(title: "Error", message: "Please enter the species")
+            return
+        }
+        
+        guard let breed = breedField.text, !breed.isEmpty else {
+            showAlert(title: "Error", message: "Please enter the breed")
+            return
+        }
+        
+        guard let gender = genderField.text, !gender.isEmpty else {
+            showAlert(title: "Error", message: "Please enter the gender")
+            return
+        }
+        
+        guard let birthDate = birthDateField.text, !birthDate.isEmpty else {
+            showAlert(title: "Error", message: "Please select a birth date")
+            return
+        }
+        
+        guard let ownerId = UserDefaults.standard.object(forKey: "userId") as? Int else {
+            showAlert(title: "Error", message: "User info could not be found")
+            return
+        }
+
+        print("Creating pet with data:")
+        print("Name: \(name)")
+        print("Species: \(species)")
+        print("Breed: \(breed)")
+        print("Gender: \(gender)")
+        print("Birth Date: \(birthDate)")
+        print("Owner ID: \(ownerId)")
 
         let pet = Pet(
             id: nil,
-            name: nameField.text ?? "",
-            species: speciesField.text ?? "",
-            breed: breedField.text ?? "",
-            gender: genderField.text ?? "",
-            birthDate: birthDateField.text ?? "",
+            name: name,
+            species: species,
+            breed: breed,
+            gender: gender,
+            birthDate: birthDate,
             registeredAt: nil,
             owner: nil
         )
 
-        NetworkManager.shared.addPet(pet: pet, ownerId: ownerId) { result in
+        NetworkManager.shared.createPet(pet: pet, ownerId: ownerId) { [weak self] result in
+            guard let self = self else { return }
+            
             DispatchQueue.main.async {
                 switch result {
                 case .success(let savedPet):
+                    print("Successfully created pet with ID: \(savedPet.id ?? -1)")
                     self.onPetAdded?(savedPet)
                     self.navigationController?.popViewController(animated: true)
                 case .failure(let error):
-                    self.showAlert(title: "Hata", message: error.localizedDescription)
+                    print("Error creating pet: \(error.localizedDescription)")
+                    self.showAlert(title: "Error", message: "Failed to create pet: \(error.localizedDescription)")
                 }
             }
         }
@@ -105,7 +141,7 @@ class AddPetViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(.init(title: "Tamam", style: .default))
+        alert.addAction(.init(title: "OK", style: .default))
         present(alert, animated: true)
     }
 }

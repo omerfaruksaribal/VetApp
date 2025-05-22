@@ -1,44 +1,75 @@
 import UIKit
 
 class VisitCell: UITableViewCell {
-
-    private let titleLabel = UILabel()
-    private let detailLabel = UILabel()
-
+    private let stackView: UIStackView = {
+        let sv = UIStackView()
+        sv.axis = .vertical
+        sv.spacing = 4
+        sv.translatesAutoresizingMaskIntoConstraints = false
+        return sv
+    }()
+    
+    private let petNameLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        return label
+    }()
+    
+    private let vetNameLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = .secondaryLabel
+        return label
+    }()
+    
+    private let dateLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14)
+        label.textColor = .secondaryLabel
+        return label
+    }()
+    
+    private let diagnosisLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14)
+        label.numberOfLines = 2
+        return label
+    }()
+    
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        setup()
+        setupViews()
     }
-
+    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-
-    private func setup() {
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
-        titleLabel.numberOfLines = 1
-
-        detailLabel.font = UIFont.systemFont(ofSize: 14)
-        detailLabel.numberOfLines = 0
-        detailLabel.textColor = .darkGray
-
-        let stack = UIStackView(arrangedSubviews: [titleLabel, detailLabel])
-        stack.axis = .vertical
-        stack.spacing = 4
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        contentView.addSubview(stack)
-
+    
+    private func setupViews() {
+        contentView.addSubview(stackView)
+        
+        stackView.addArrangedSubview(petNameLabel)
+        stackView.addArrangedSubview(vetNameLabel)
+        stackView.addArrangedSubview(dateLabel)
+        stackView.addArrangedSubview(diagnosisLabel)
+        
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
-            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
-            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 12),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12)
         ])
     }
-
+    
     func configure(with visit: Visit) {
-        titleLabel.text = "\(visit.vetName) - \(visit.date)"
-        detailLabel.text = "Diagnosis: \(visit.diagnosis)\nPrescription: \(visit.prescription.joined(separator: ", "))"
+        petNameLabel.text = visit.petName
+        vetNameLabel.text = visit.vetName
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateStyle = .medium
+        dateFormatter.timeStyle = .short
+        dateLabel.text = dateFormatter.string(from: visit.date)
+        
+        diagnosisLabel.text = visit.diagnosis
     }
 }

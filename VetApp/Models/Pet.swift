@@ -4,6 +4,8 @@
 //
 //  Created by Ömerfaruk Saribal on 4.05.2025.
 //
+import Foundation
+
 struct Pet: Codable {
     let id: Int?
     let name: String

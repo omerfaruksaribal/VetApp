@@ -42,64 +42,106 @@ class DiagnosedPatientsViewController: UIViewController {
 
     private func loadDiagnosedPatients() {
         diagnosedList = []
-        let ownerId = UserDefaults.standard.integer(forKey: "userId")
+        guard let vetId = UserDefaults.standard.object(forKey: "userId") as? Int else {
+            print("Error: Could not get vetId from UserDefaults")
+            showAlert(title: "Error", message: "User info could not be found")
+            return
+        }
 
-        NetworkManager.shared.getPetsByOwner(ownerId: ownerId) { petResult in
-            switch petResult {
-            case .success(let pets):
+        print("Loading diagnosed patients for vet ID: \(vetId)")
+        NetworkManager.shared.getVetAppointments(vetId: vetId) { [weak self] result in
+            guard let self = self else { return }
+            
+            switch result {
+            case .success(let appointments):
+                print("Successfully fetched \(appointments.count) appointments")
                 let group = DispatchGroup()
-
-                for pet in pets {
+                
+                // Only process completed appointments
+                let completedAppointments = appointments.filter { $0.status == "COMPLETED" }
+                print("Found \(completedAppointments.count) completed appointments")
+                
+                for appointment in completedAppointments {
                     group.enter()
-                    NetworkManager.shared.getDiagnosesByPetId(pet.id ?? 0) { diagResult in
+                    let petId = appointment.pet.id
+                    print("Fetching diagnoses for pet ID: \(petId)")
+                    
+                    NetworkManager.shared.getDiagnosesByPetId(petId: petId) { diagResult in
                         switch diagResult {
                         case .success(let diagnoses):
-                            for diag in diagnoses {
-                                group.enter()
-                                NetworkManager.shared.getPrescriptionsByDiagnosisId(diag.id) { presResult in
-                                    switch presResult {
-                                    case .success(let prescriptions):
-                                        let medNames = prescriptions.map { $0.medicineName }
-                                        let diagnosed = DiagnosedPatient(
-                                            petName: pet.name,
-                                            diagnosis: diag.description,
-                                            prescription: medNames
-                                        )
-                                        self.diagnosedList.append(diagnosed)
-                                    case .failure(_): break
+                            print("Found \(diagnoses.count) diagnoses for pet ID: \(petId)")
+                            if !diagnoses.isEmpty {
+                                for diag in diagnoses {
+                                    group.enter()
+                                    print("Fetching prescriptions for diagnosis ID: \(diag.id)")
+                                    NetworkManager.shared.getPrescriptionsByDiagnosisId(diag.id) { presResult in
+                                        switch presResult {
+                                        case .success(let prescriptions):
+                                            print("Found \(prescriptions.count) prescriptions for diagnosis ID: \(diag.id)")
+                                            let medNames = prescriptions.map { $0.medicineName }
+                                            let diagnosed = DiagnosedPatient(
+                                                petName: appointment.pet.name,
+                                                diagnosis: diag.description,
+                                                prescription: medNames
+                                            )
+                                            self.diagnosedList.append(diagnosed)
+                                        case .failure(let error):
+                                            print("Error fetching prescriptions: \(error.localizedDescription)")
+                                            // If prescriptions are missing, still add the diagnosis
+                                            if error.localizedDescription.contains("missing") {
+                                                let diagnosed = DiagnosedPatient(
+                                                    petName: appointment.pet.name,
+                                                    diagnosis: diag.description,
+                                                    prescription: []
+                                                )
+                                                self.diagnosedList.append(diagnosed)
+                                            }
+                                        }
+                                        group.leave()
                                     }
-                                    group.leave()
                                 }
                             }
-                        case .failure(_): break
+                        case .failure(let error):
+                            print("Error fetching diagnoses: \(error.localizedDescription)")
+                            // Don't show error if there are no diagnoses yet
+                            if !error.localizedDescription.contains("missing") {
+                                DispatchQueue.main.async {
+                                    self.showAlert(title: "Error", message: "Failed to load diagnoses: \(error.localizedDescription)")
+                                }
+                            }
                         }
                         group.leave()
                     }
                 }
-
+                
                 group.notify(queue: .main) {
+                    print("Finished loading all data. Total diagnosed patients: \(self.diagnosedList.count)")
+                    if self.diagnosedList.isEmpty {
+                        self.showAlert(title: "No Patients", message: "You don't have any diagnosed patients yet.")
+                    }
                     self.tableView.reloadData()
                 }
-
+                
             case .failure(let error):
+                print("Error fetching appointments: \(error.localizedDescription)")
                 DispatchQueue.main.async {
-                    self.showAlert(title: "Hata", message: error.localizedDescription)
+                    self.showAlert(title: "Error", message: "Failed to load appointments: \(error.localizedDescription)")
                 }
             }
         }
     }
 
     private func showAlert(title: String, message: String) {
-        let alertContoller = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alertContoller.addAction(.init(title: "OK", style: .default))
-        present(alertContoller, animated: true)
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(.init(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 
     @objc private func showUserOptions() {
         let alert = UIAlertController(title: "Account", message: nil, preferredStyle: .actionSheet)
 
-        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { _ in
-            self.handleLogout()
+        alert.addAction(UIAlertAction(title: "Logout", style: .destructive) { [weak self] _ in
+            self?.handleLogout()
         })
 
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
@@ -111,7 +153,6 @@ class DiagnosedPatientsViewController: UIViewController {
         UserDefaults.standard.removeObject(forKey: "userId")
         UserDefaults.standard.removeObject(forKey: "role")
 
-        // LoginViewController
         let loginVC = LoginViewController()
         let nav = UINavigationController(rootViewController: loginVC)
         nav.modalPresentationStyle = .fullScreen

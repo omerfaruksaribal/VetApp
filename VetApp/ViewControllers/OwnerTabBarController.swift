@@ -10,9 +10,6 @@ class OwnerTabBarController: UITabBarController {
         let appointmentsVC = UINavigationController(rootViewController: OwnerAppointmentsViewController())
         appointmentsVC.tabBarItem = UITabBarItem(title: "Appointments", image: UIImage(systemName: "calendar"), tag: 1)
 
-        let historyVC = UINavigationController(rootViewController: VisitHistoryViewController())
-        historyVC.tabBarItem = UITabBarItem(title: "History", image: UIImage(systemName: "doc.plaintext"), tag: 2)
-
-        viewControllers = [petsVC, appointmentsVC, historyVC]
+        viewControllers = [petsVC, appointmentsVC]
     }
 }

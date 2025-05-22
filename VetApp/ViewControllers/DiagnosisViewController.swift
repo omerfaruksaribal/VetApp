@@ -60,41 +60,67 @@ class DiagnosisViewController: UIViewController {
             .components(separatedBy: ",")
             .map { $0.trimmingCharacters(in: .whitespaces) } ?? []
 
-        NetworkManager.shared.createDiagnosis(appointmentId: appointment.id, description: description, notes: notes) { result in
+        print("Creating diagnosis with data:")
+        print("Description: \(description)")
+        print("Notes: \(notes)")
+        print("Medicines: \(medicineNames)")
+
+        NetworkManager.shared.createDiagnosis(appointmentId: appointment.id, description: description, notes: notes) { [weak self] result in
+            guard let self = self else { return }
+            
             DispatchQueue.main.async {
                 switch result {
                 case .success(let diagnosis):
+                    print("Successfully created diagnosis with ID: \(diagnosis.id)")
+                    
+                    if medicineNames.isEmpty {
+                        print("No prescriptions to add")
+                        self.navigationController?.popViewController(animated: true)
+                        return
+                    }
+                    
                     let group = DispatchGroup()
-                    var errorOccured = false
-
+                    var prescriptionErrors: [String] = []
+                    var successfulPrescriptions: [String] = []
+                    
                     for name in medicineNames {
                         group.enter()
-                        let prescription = Prescription(
-                            id: 0,
+                        print("Creating prescription for medicine: \(name)")
+                        NetworkManager.shared.createPrescription(
                             diagnosisId: diagnosis.id,
                             medicineName: name,
-                            dosage: "",
-                            instructions: ""
-                        )
-
-                        NetworkManager.shared.addPrescription(prescription: prescription) { result in
-                            if case .failure(_) = result {
-                                errorOccured = true
+                            dosage: "As prescribed",
+                            instructions: "Follow doctor's instructions"
+                        ) { result in
+                            switch result {
+                            case .success(let prescription):
+                                print("Successfully created prescription for: \(prescription.medicineName)")
+                                successfulPrescriptions.append(prescription.medicineName)
+                            case .failure(let error):
+                                print("Error creating prescription for \(name): \(error.localizedDescription)")
+                                prescriptionErrors.append("\(name): \(error.localizedDescription)")
                             }
                             group.leave()
                         }
                     }
-
+                    
                     group.notify(queue: .main) {
-                        if errorOccured {
-                            self.showAlert(title: "Error", message: "Failed to add all prescriptions")
+                        if !prescriptionErrors.isEmpty {
+                            var message = ""
+                            if !successfulPrescriptions.isEmpty {
+                                message += "Successfully added: \(successfulPrescriptions.joined(separator: ", "))\n\n"
+                            }
+                            message += "Failed to add:\n" + prescriptionErrors.joined(separator: "\n")
+                            self.showAlert(title: "Prescription Status", message: message)
                         } else {
-                            self.navigationController?.popViewController(animated: true)
+                            self.showAlert(title: "Success", message: "Successfully added all prescriptions")
                         }
+                        self.navigationController?.popViewController(animated: true)
                     }
-
+                    
                 case .failure(let error):
-                    self.showAlert(title: "Error", message: error.localizedDescription)
+                    print("Error creating diagnosis: \(error.localizedDescription)")
+                    self.showAlert(title: "Error", message: "Failed to create diagnosis: \(error.localizedDescription)")
                 }
             }
         }

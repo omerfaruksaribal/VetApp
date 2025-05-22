@@ -2,56 +2,11 @@ import Foundation
 
 class NetworkManager {
     static let shared = NetworkManager()
+    private let baseURL = "http://localhost:8080"
+    
     private init() {}
-
-    let baseURL = "http://localhost:8080"
-
-    func login(email: String, password: String, completion: @escaping (Result<UserResponse, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/auth/login") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: String] = [
-            "email": email,
-            "password": password
-        ]
-        request.httpBody = try? JSONEncoder().encode(body)
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
-            if let error = error {
-                completion(.failure(error))
-                print(error)
-                return
-            }
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                completion(.failure(NSError(domain: "Invalid Response", code: 0)))
-                return
-            }
-
-            guard httpResponse.statusCode == 200 else {
-                let code = httpResponse.statusCode
-                completion(.failure(NSError(domain: "HTTPError", code: code, userInfo: [NSLocalizedDescriptionKey: "Sunucu \(code) hatası"])))
-                return
-            }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "EmptyResponse", code: 0)))
-                return
-            }
-
-            do {
-                let result = try JSONDecoder().decode(UserResponse.self, from: data)
-                completion(.success(result))
-            } catch {
-                print("Login decode error:", error)
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
+    
+    // MARK: - Auth
     func register(user: RegisterRequest, completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/auth/register") else { return }
 
@@ -106,69 +61,363 @@ class NetworkManager {
             completion(.success(response))
         }.resume()
     }
-
-    func addPet(pet: Pet, ownerId: Int, completion: @escaping (Result<Pet, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/pets") else { return }
-
+    
+    // MARK: - Appointments
+    func getVetAppointments(vetId: Int, completion: @escaping (Result<[AppointmentResponse], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/appointments/vet/\(vetId)") else { return }
+        
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+            
+            do {
+                let appointments = try JSONDecoder().decode([AppointmentResponse].self, from: data)
+                completion(.success(appointments))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    func getAppointmentsByPetId(petId: Int, completion: @escaping (Result<[AppointmentResponse], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/appointments/\(petId)") else { return }
+        
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+            
+            do {
+                let appointments = try JSONDecoder().decode([AppointmentResponse].self, from: data)
+                completion(.success(appointments))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    func completeAppointment(appointmentId: Int, completion: @escaping (Result<AppointmentResponse, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/appointments/\(appointmentId)/complete") else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let data = data else {
+                completion(.failure(NSError(domain: "noData", code: 0)))
+                return
+            }
+            
+            do {
+                let appointment = try JSONDecoder().decode(AppointmentResponse.self, from: data)
+                completion(.success(appointment))
+            } catch {
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    // MARK: - Diagnoses
+    func getDiagnosesByPetId(petId: Int, completion: @escaping (Result<[Diagnosis], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/diagnoses/pet/\(petId)") else {
+            print("Error: Invalid URL for getting diagnoses by pet ID")
+            completion(.failure(NSError(domain: "InvalidURL", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL for getting diagnoses"])))
+            return
+        }
+        
+        print("Fetching diagnoses for pet ID: \(petId)")
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Network error fetching diagnoses: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
+            guard let data = data else {
+                print("Error: No data received from server")
+                completion(.failure(NSError(domain: "noData", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
+                return
+            }
+            
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Server response: \(responseString)")
+            }
+            
+            do {
+                let diagnoses = try JSONDecoder().decode([Diagnosis].self, from: data)
+                print("Successfully fetched \(diagnoses.count) diagnoses")
+                completion(.success(diagnoses))
+            } catch {
+                print("Error decoding diagnoses: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    func createDiagnosis(appointmentId: Int, description: String, notes: String, completion: @escaping (Result<Diagnosis, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/diagnoses/create") else {
+            print("Error: Invalid URL for diagnosis creation")
+            completion(.failure(NSError(domain: "InvalidURL", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL for diagnosis creation"])))
+            return
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: Any] = [
+        
+        let diagnosisData = [
+            "appointmentId": appointmentId,
+            "description": description,
+            "notes": notes
+        ] as [String: Any]
+        
+        print("Creating diagnosis with data: \(diagnosisData)")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: diagnosisData)
+        } catch {
+            print("Error encoding diagnosis data: \(error.localizedDescription)")
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Network error creating diagnosis: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
+            guard let data = data else {
+                print("Error: No data received from server")
+                completion(.failure(NSError(domain: "noData", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
+                return
+            }
+            
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Server response: \(responseString)")
+            }
+            
+            do {
+                let diagnosis = try JSONDecoder().decode(Diagnosis.self, from: data)
+                print("Successfully created diagnosis with ID: \(diagnosis.id)")
+                completion(.success(diagnosis))
+            } catch {
+                print("Error decoding diagnosis response: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    // MARK: - Prescriptions
+    func getPrescriptionsByDiagnosisId(_ diagnosisId: Int, completion: @escaping (Result<[Prescription], Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/prescriptions/\(diagnosisId)") else {
+            print("Error: Invalid URL for getting prescriptions")
+            completion(.failure(NSError(domain: "InvalidURL", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL for getting prescriptions"])))
+            return
+        }
+        
+        print("Fetching prescriptions for diagnosis ID: \(diagnosisId)")
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Network error fetching prescriptions: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
+            guard let data = data else {
+                print("Error: No data received from server")
+                completion(.failure(NSError(domain: "noData", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
+                return
+            }
+            
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Server response: \(responseString)")
+            }
+            
+            do {
+                let prescriptions = try JSONDecoder().decode([Prescription].self, from: data)
+                print("Successfully fetched \(prescriptions.count) prescriptions")
+                completion(.success(prescriptions))
+            } catch {
+                print("Error decoding prescriptions: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    func createPrescription(diagnosisId: Int, medicineName: String, dosage: String, instructions: String, completion: @escaping (Result<Prescription, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/prescriptions/add") else {
+            print("Error: Invalid URL for prescription creation")
+            completion(.failure(NSError(domain: "InvalidURL", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL for prescription creation"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let prescriptionData = [
+            "diagnosisId": diagnosisId,
+            "medicineName": medicineName,
+            "dosage": dosage,
+            "instructions": instructions
+        ] as [String: Any]
+        
+        print("Creating prescription with data: \(prescriptionData)")
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: prescriptionData)
+        } catch {
+            print("Error encoding prescription data: \(error.localizedDescription)")
+            completion(.failure(error))
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("Network error creating prescription: \(error.localizedDescription)")
+                completion(.failure(error))
+                return
+            }
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
+            guard let data = data else {
+                print("Error: No data received from server")
+                completion(.failure(NSError(domain: "noData", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
+                return
+            }
+            
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Server response: \(responseString)")
+            }
+            
+            do {
+                let prescription = try JSONDecoder().decode(Prescription.self, from: data)
+                print("Successfully created prescription with ID: \(prescription.id)")
+                completion(.success(prescription))
+            } catch {
+                print("Error decoding prescription response: \(error.localizedDescription)")
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+    
+    // MARK: - Pets
+    func createPet(pet: Pet, ownerId: Int, completion: @escaping (Result<Pet, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/pets") else {
+            print("Error: Invalid URL for pet creation")
+            completion(.failure(NSError(domain: "InvalidURL", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid URL for pet creation"])))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let petData = [
             "name": pet.name,
             "species": pet.species,
             "breed": pet.breed,
             "gender": pet.gender,
             "birthDate": pet.birthDate,
             "ownerId": ownerId
-        ]
-
+        ] as [String: Any]
+        
+        print("Creating pet with data: \(petData)")
+        
         do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            request.httpBody = try JSONSerialization.data(withJSONObject: petData)
         } catch {
+            print("Error encoding pet data: \(error.localizedDescription)")
             completion(.failure(error))
             return
         }
-
+        
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
+                print("Network error creating pet: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
-
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                print("HTTP Status Code: \(httpResponse.statusCode)")
+            }
+            
             guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
+                print("Error: No data received from server")
+                completion(.failure(NSError(domain: "noData", code: 0, userInfo: [NSLocalizedDescriptionKey: "No data received from server"])))
                 return
             }
-
+            
+            // Print raw response for debugging
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Server response: \(responseString)")
+            }
+            
             do {
-                let addedPet = try JSONDecoder().decode(Pet.self, from: data)
-                completion(.success(addedPet))
+                let savedPet = try JSONDecoder().decode(Pet.self, from: data)
+                print("Successfully created pet with ID: \(savedPet.id ?? -1)")
+                completion(.success(savedPet))
             } catch {
+                print("Error decoding pet response: \(error.localizedDescription)")
                 completion(.failure(error))
             }
         }.resume()
     }
-
+    
     func getPetsByOwner(ownerId: Int, completion: @escaping (Result<[Pet], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/pets/owner/\(ownerId)") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { data, response, error in
+        
+        URLSession.shared.dataTask(with: url) { data, _, error in
             if let error = error {
                 completion(.failure(error))
-                print("Network Manager -> Get Pets By Owner Error: \(error)")
                 return
             }
-
+            
             guard let data = data else {
                 completion(.failure(NSError(domain: "noData", code: 0)))
                 return
             }
-
+            
             do {
                 let pets = try JSONDecoder().decode([Pet].self, from: data)
                 completion(.success(pets))
@@ -180,22 +429,22 @@ class NetworkManager {
 
     func getAllVets(completion: @escaping (Result<[UserResponse], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/vets") else { return }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
-                print("Network Manager -> Get All Vets -> Error: \(error)")
                 return
             }
             
             guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
+                completion(.failure(NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "No data received"])))
                 return
             }
-
+            
             do {
                 let vets = try JSONDecoder().decode([UserResponse].self, from: data)
                 completion(.success(vets))
@@ -204,160 +453,5 @@ class NetworkManager {
             }
         }.resume()
     }
-
-    func getAppointmentsForVet(vetId: Int, completion: @escaping (Result<[VetAppointment], Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/appointments/vet/\(vetId)") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error {
-                completion(.failure(error))
-                print("Network Manager -> Get Appointments For Vet -> Error: \(error)")
-                return
-            }
-            
-            guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
-                return
-            }
-
-            do {
-                let appointments = try JSONDecoder().decode([VetAppointment].self, from: data)
-                completion(.success(appointments))
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
-    func createDiagnosis(appointmentId: Int, description: String, notes: String, completion: @escaping (Result<Diagnosis, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/diagnoses/create") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: Any] = [
-            "appointmentId": appointmentId,
-            "description": description,
-            "notes": notes
-        ]
-
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            print("Diagnosis Request Body:", String(data: request.httpBody!, encoding: .utf8) ?? "invalid")
-        } catch {
-            completion(.failure(error))
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
-                return
-            }
-
-            do {
-                let diagnosis = try JSONDecoder().decode(Diagnosis.self, from: data)
-                completion(.success(diagnosis))
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
-    func addPrescription(prescription: Prescription, completion: @escaping (Result<String, Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/prescriptions/add") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        do {
-            request.httpBody = try JSONEncoder().encode(prescription)
-        } catch {
-            completion(.failure(error))
-            return
-        }
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-
-            guard let data = data,
-                  let response = String(data: data, encoding: .utf8) else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
-                return
-            }
-
-            completion(.success(response))
-        }.resume()
-    }
-
-    func getDiagnosesByPetId(_ petId: Int, completion: @escaping (Result<[Diagnosis], Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/diagnoses/pet/\(petId)") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
-                return
-            }
-
-            do {
-                let diagnoses = try JSONDecoder().decode([Diagnosis].self, from: data)
-                completion(.success(diagnoses))
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
-    func getPrescriptionsByDiagnosisId(_ diagnosisId: Int, completion: @escaping (Result<[Prescription], Error>) -> Void) {
-        guard let url = URL(string: "\(baseURL)/prescriptions/\(diagnosisId)") else { return }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            if let error = error {
-                completion(.failure(error))
-                print("Network Manager -> Get Prescriptions By Diagnosis Id Error: \(error)")
-                return
-            }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "noData", code: 0)))
-                return
-            }
-
-            do {
-                let prescriptions = try JSONDecoder().decode([Prescription].self, from: data)
-                completion(.success(prescriptions))
-            } catch {
-                completion(.failure(error))
-            }
-        }.resume()
-    }
-
 }
 

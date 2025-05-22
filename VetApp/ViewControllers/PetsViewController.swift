@@ -19,7 +19,7 @@ class PetsViewController: UIViewController {
         setupNavigationBar()
         loadPets()
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "person.crop.circle"),
             style: .plain,
             target: self,
