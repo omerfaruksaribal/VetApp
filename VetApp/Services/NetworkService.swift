@@ -7,6 +7,8 @@ enum NetworkError: Error {
     case serverError(String)
 }
 
+
+// Use network service only for ios15+. if the ios version is less than 15, then async - await won't work.
 class NetworkService {
     static let shared = NetworkService()
     private let baseURL = "http://localhost:8080"

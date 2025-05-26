@@ -64,8 +64,33 @@ class LoginViewController: UIViewController {
             showAlert(title: "Error", message: "Please fill in all fields")
             return
         }
-        
-        Task {
+
+        NetworkManager.shared.login(email: email, password: password) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+                    // Save user info
+                    UserDefaults.standard.set(response.id, forKey: "userId")
+                    UserDefaults.standard.set(response.role, forKey: "role")
+
+                    // Navigate to appropriate tab bar controller
+                    let tabBarController: UITabBarController
+                    if response.role == "VET" {
+                        tabBarController = VetTabBarController()
+                    } else {
+                        tabBarController = OwnerTabBarController()
+                    }
+                    tabBarController.modalPresentationStyle = .fullScreen
+                    self.present(tabBarController, animated: true)
+
+                case .failure(let error):
+                    self.showAlert(title: "Error", message: error.localizedDescription)
+                }
+            }
+        }
+
+        // MARK: for async - await version.
+         /* Task {
             do {
                 let response = try await NetworkService.shared.login(email: email, password: password)
                 
@@ -89,7 +114,7 @@ class LoginViewController: UIViewController {
                     showAlert(title: "Error", message: error.localizedDescription)
                 }
             }
-        }
+        } */
     }
     
     @objc private func handleRegister() {

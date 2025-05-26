@@ -6,7 +6,7 @@ class NetworkManager {
     
     private init() {}
     
-    // MARK: - Auth
+    // MARK: - Register - POST Method - IMPORTANT: Returns String
     func register(user: RegisterRequest, completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/auth/register") else { return }
 
@@ -32,6 +32,42 @@ class NetworkManager {
         }.resume()
     }
 
+    // MARK: - Login - POST Method - IMPORTANT: Returns UserResponse Array
+    func login(email: String, password: String, completion: @escaping (Result<UserResponse, Error>) -> Void) {
+        guard let url = URL(string: "\(baseURL)/auth/login") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let body: [String: String] = [
+            "email": email,
+            "password": password
+        ]
+        request.httpBody = try? JSONEncoder().encode(body)
+
+        URLSession.shared.dataTask(with: request) { data, _, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = data else {
+                completion(.failure(NSError(domain: "EmptyResponse", code: 0)))
+                return
+            }
+
+            do {
+                let result = try JSONDecoder().decode(UserResponse.self, from: data)
+                completion(.success(result))
+            } catch {
+                print("Login decode error:", error)
+                completion(.failure(error))
+            }
+        }.resume()
+    }
+
+    // MARK: - Create Appointment - POST Method
     func createAppointment(request: CreateAppointmentRequest, completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/appointments") else { return }
 
@@ -62,7 +98,7 @@ class NetworkManager {
         }.resume()
     }
     
-    // MARK: - Appointments
+    // MARK: - Get Appointments By Vet ID - GET Method
     func getVetAppointments(vetId: Int, completion: @escaping (Result<[AppointmentResponse], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/appointments/vet/\(vetId)") else { return }
         
@@ -85,7 +121,8 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    // MARK: - Get Appointments By Pet ID - GET Method
     func getAppointmentsByPetId(petId: Int, completion: @escaping (Result<[AppointmentResponse], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/appointments/\(petId)") else { return }
         
@@ -108,7 +145,8 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    // MARK: - Complete Appointment with AppointmentID - PUT Method
     func completeAppointment(appointmentId: Int, completion: @escaping (Result<AppointmentResponse, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/appointments/\(appointmentId)/complete") else { return }
         
@@ -135,7 +173,7 @@ class NetworkManager {
         }.resume()
     }
     
-    // MARK: - Diagnoses
+    // MARK: - Get Diagnoses By Pet ID - GET Method
     func getDiagnosesByPetId(petId: Int, completion: @escaping (Result<[Diagnosis], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/diagnoses/pet/\(petId)") else {
             print("Error: Invalid URL for getting diagnoses by pet ID")
@@ -176,7 +214,8 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    // MARK: - Create Diagnosis with Appointment ID - POST Method
     func createDiagnosis(appointmentId: Int, description: String, notes: String, completion: @escaping (Result<Diagnosis, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/diagnoses/create") else {
             print("Error: Invalid URL for diagnosis creation")
@@ -237,7 +276,7 @@ class NetworkManager {
         }.resume()
     }
     
-    // MARK: - Prescriptions
+    // MARK: - Get Prescription By DiagnosisID - GET Method
     func getPrescriptionsByDiagnosisId(_ diagnosisId: Int, completion: @escaping (Result<[Prescription], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/prescriptions/\(diagnosisId)") else {
             print("Error: Invalid URL for getting prescriptions")
@@ -278,7 +317,8 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    // MARK: - Create Prescription with DiagnosisID - POST Method
     func createPrescription(diagnosisId: Int, medicineName: String, dosage: String, instructions: String, completion: @escaping (Result<Prescription, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/prescriptions/add") else {
             print("Error: Invalid URL for prescription creation")
@@ -340,7 +380,7 @@ class NetworkManager {
         }.resume()
     }
     
-    // MARK: - Pets
+    // MARK: - Create Pet with OwnerID - POST Method
     func createPet(pet: Pet, ownerId: Int, completion: @escaping (Result<Pet, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/pets") else {
             print("Error: Invalid URL for pet creation")
@@ -403,7 +443,8 @@ class NetworkManager {
             }
         }.resume()
     }
-    
+
+    // MARK: - Get Pets by OwnerID - GET Method
     func getPetsByOwner(ownerId: Int, completion: @escaping (Result<[Pet], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/pets/owner/\(ownerId)") else { return }
         
@@ -427,6 +468,7 @@ class NetworkManager {
         }.resume()
     }
 
+    // MARK: - Get All Vets - GET Method
     func getAllVets(completion: @escaping (Result<[UserResponse], Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/users/vets") else { return }
         
@@ -454,6 +496,7 @@ class NetworkManager {
         }.resume()
     }
 
+    // MARK: - Delete Pet with PetID - DELETE Method
     func deletePet(petId: Int, completion: @escaping (Result<Void, Error>) -> Void) {
         guard let url = URL(string: "\(baseURL)/pets/\(petId)") else {
             print("Error: Invalid URL for pet deletion")
